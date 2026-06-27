@@ -1,38 +1,44 @@
 from fastapi import APIRouter
 
-from app.api.routes.health_routes import router as health_router
-from app.api.routes.candidate_routes import router as candidate_router
-from app.api.routes.job_routes import router as job_router
-from app.api.routes.analysis_routes import router as analysis_router
-from app.api.routes.resume_routes import router as resume_router
+from app.api.routes import (
+    health_routes,
+    resume_routes,
+    candidate_routes,
+    analysis_routes,
+    job_routes
+)
+
+
 
 api_router = APIRouter()
 
 api_router.include_router(
-    health_router,
+    health_routes.router,
+    prefix="/health",
     tags=["Health"]
 )
 
 api_router.include_router(
-    candidate_router,
-    prefix="/candidates",
-    tags=["Candidates"]
+    resume_routes.router,
+    prefix="/resume",
+    tags=["Resume"]
 )
 
 api_router.include_router(
-    job_router,
-    prefix="/jobs",
-    tags=["Jobs"]
+    candidate_routes.router,
+    prefix="/candidate",
+    tags=["Candidate"]
 )
 
 api_router.include_router(
-    analysis_router,
+    analysis_routes.router,
     prefix="/analysis",
     tags=["Analysis"]
 )
 
 api_router.include_router(
-    resume_router,
-    prefix="/resume",
-    tags=["Resume"]
+    job_routes.router,
+    prefix="/job",
+    tags=["Job Matching"]
 )
+

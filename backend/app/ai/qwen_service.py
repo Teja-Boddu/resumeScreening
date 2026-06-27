@@ -8,42 +8,55 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 
 class QwenService:
 
+    MODEL_NAME = "qwen2.5:3b"
+
+    @staticmethod
+    def warmup():
+        """
+        Load the model into memory before processing resumes.
+        """
+        try:
+            requests.post(
+                OLLAMA_URL,
+                json={
+                    "model": QwenService.MODEL_NAME,
+                    "prompt": "Hello",
+                    "stream": False,
+                    "think": False
+                },
+                timeout=60
+            )
+            print("✅ Qwen Warmup Completed")
+
+        except Exception as e:
+            print("⚠ Warmup Failed:", e)
+
     @staticmethod
     def extract_candidate_information(resume_text: str):
 
+        # Limit resume size for faster inference
+        resume_text = resume_text[:4000]
+
         prompt = f"""
-You are an expert AI Resume Parser.
+Extract the following information from the resume.
 
-Extract the resume information.
-
-Rules:
-
-1. Return ONLY JSON.
-2. No explanation.
-3. No markdown.
-4. Missing values should be null.
-5. Skills must be a list.
-6. Education must be a list.
-7. Projects must be a list.
-8. Certifications must be a list.
-
-Return this JSON format exactly:
+Return ONLY valid JSON.
 
 {{
-    "full_name": "",
-    "email": "",
-    "phone": "",
-    "current_location": "",
-    "current_role": "",
-    "total_experience": 0,
-    "professional_summary": "",
-    "primary_domain": "",
-    "education": [],
-    "skills": [],
-    "projects": [],
-    "certifications": [],
-    "resume_file_name": "",
-    "resume_path": ""
+  "full_name": "",
+  "email": "",
+  "phone": "",
+  "current_location": "",
+  "current_role": "",
+  "total_experience": 0,
+  "professional_summary": "",
+  "primary_domain": "",
+  "education": [],
+  "skills": [],
+  "projects": [],
+  "certifications": [],
+  "resume_file_name": "",
+  "resume_path": ""
 }}
 
 Resume:
@@ -54,10 +67,12 @@ Resume:
         response = requests.post(
             OLLAMA_URL,
             json={
-                "model": "qwen3:8b",
+                "model": QwenService.MODEL_NAME,
                 "prompt": prompt,
-                "stream": False
-            }
+                "stream": False,
+                "think": False
+            },
+            timeout=120
         )
 
         response.raise_for_status()
@@ -67,4 +82,15 @@ Resume:
         # Remove markdown if present
         result = re.sub(r"```json|```", "", result).strip()
 
-        return json.loads(result)
+        try:
+            return json.loads(result)
+
+        except json.JSONDecodeError:
+
+            print("\n========== INVALID QWEN RESPONSE ==========")
+            print(result)
+            print("===========================================\n")
+
+            raise Exception(
+                "Qwen returned invalid JSON."
+            )
