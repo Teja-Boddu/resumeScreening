@@ -3,7 +3,6 @@ import re
 
 class SkillExtractor:
 
-    # Expand this list over time
     KNOWN_SKILLS = {
 
         "python",
@@ -13,9 +12,11 @@ class SkillExtractor:
         "react",
         "angular",
         "vue",
+
         "node",
         "node.js",
         "express",
+
         "fastapi",
         "flask",
         "django",
@@ -66,14 +67,10 @@ class SkillExtractor:
 
         "network security",
         "siem"
-
     }
 
     @classmethod
-    def extract_skills(
-        cls,
-        text: str
-    ):
+    def extract(cls, text: str):
 
         text = text.lower()
 
@@ -81,8 +78,18 @@ class SkillExtractor:
 
         for skill in cls.KNOWN_SKILLS:
 
-            if skill in text:
+            pattern = r"\b" + re.escape(skill) + r"\b"
+
+            if re.search(pattern, text):
 
                 found.append(skill)
 
         return sorted(set(found))
+
+    @classmethod
+    def extract_skills(cls, text: str):
+        """
+        Backward compatibility.
+        Existing code using extract_skills() will continue to work.
+        """
+        return cls.extract(text)

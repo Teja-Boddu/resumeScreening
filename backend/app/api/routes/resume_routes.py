@@ -6,7 +6,6 @@ from app.services.resume_service import ResumeService
 
 router = APIRouter()
 
-
 @router.post("/upload")
 def upload_resume_zip(
     file: UploadFile = File(...),

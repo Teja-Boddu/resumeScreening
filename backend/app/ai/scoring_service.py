@@ -2,8 +2,6 @@ from app.ai.skill_alias import SkillAlias
 from app.ai.skill_extractor import SkillExtractor
 from app.ai.experience_analyzer import ExperienceAnalyzer
 from app.ai.education_normalizer import EducationNormalizer
-
-
 class ScoringService:
 
     @staticmethod
@@ -19,35 +17,24 @@ class ScoringService:
 
         # Normalize JD skills
         jd_skills = {
-
             SkillAlias.normalize(skill)
-
             for skill in jd_skills
-
         }
 
         # Normalize Candidate skills
         candidate_skills = {
-
             SkillAlias.normalize(skill)
-
             for skill in (candidate.skills or [])
-
         }
 
-        matched = jd_skills.intersection(
-            candidate_skills
-        )
+        matched = jd_skills.intersection(candidate_skills)
 
         if len(jd_skills) == 0:
             return 0
 
         return round(
-
             (len(matched) / len(jd_skills)) * 100,
-
             2
-
         )
 
     @staticmethod
@@ -68,14 +55,11 @@ class ScoringService:
         if actual >= required:
             return 100
 
-        percentage = (
-
-            actual / required
-
-        ) * 100
+        if required == 0:
+            return 100
 
         return round(
-            percentage,
+            (actual / required) * 100,
             2
         )
 
@@ -116,25 +100,19 @@ class ScoringService:
             if isinstance(edu, dict):
 
                 text = " ".join(
-
                     str(v)
-
                     for v in edu.values()
-
                 )
 
             else:
 
                 text = str(edu)
 
-            level = EducationNormalizer.normalize(
-                text
-            )
+            level = EducationNormalizer.normalize(text)
 
             if level == "doctorate":
 
                 highest = "doctorate"
-
                 break
 
             elif level == "master":
@@ -142,11 +120,8 @@ class ScoringService:
                 highest = "master"
 
             elif (
-
                 level == "bachelor"
-
                 and highest == "unknown"
-
             ):
 
                 highest = "bachelor"
@@ -154,11 +129,8 @@ class ScoringService:
         order = {
 
             "unknown": 0,
-
             "bachelor": 1,
-
             "master": 2,
-
             "doctorate": 3
 
         }
@@ -168,18 +140,27 @@ class ScoringService:
             return 100
 
         return round(
-
-            (
-
-                order[highest]
-
-                / order[required]
-
-            ) * 100,
-
+            (order[highest] / order[required]) * 100,
             2
-
         )
+
+    @staticmethod
+    def normalize_reranker_score(
+        score: float
+    ):
+
+        """
+        CrossEncoder returns scores between 0 and 1.
+        Convert them to percentages.
+        """
+
+        if score is None:
+            return 0
+
+        if score <= 1:
+            return round(score * 100, 2)
+
+        return round(score, 2)
 
     @staticmethod
     def final_score(
@@ -195,6 +176,11 @@ class ScoringService:
         reranker
 
     ):
+
+        # Convert CrossEncoder score (0-1) to (0-100)
+        reranker = ScoringService.normalize_reranker_score(
+            reranker
+        )
 
         score = (
 
